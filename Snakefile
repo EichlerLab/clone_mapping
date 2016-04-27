@@ -17,7 +17,8 @@ BARCODE_PREFIX = config["barcode_prefix"]
 MRSFAST_BINARY = config["mrsfast_path"]
 MRSFAST_OPTS = config["mrsfast_opts"]
 MRSFAST_INDEX = config[REFERENCE]["mrsfast_index"]
-SAMTOOLS_CONTIGS = config[REFERENCE]["samtools_contigs"]
+CONTIGS = config[REFERENCE]["contigs"]
+SUNK_MASK = config[REFERENCE]["sunk_mask"]
 
 MANIFEST_FILE = config["manifest"]
 
@@ -34,14 +35,36 @@ def get_well_split_fq_from_sample(wildcards):
 localrules: all
 
 rule all:
-    input: expand("bam/{sample}.sorted.{ext}", sample=MANIFEST.sample_name, ext=["bam", "bam.bai"])
+    input: "clone_locations.bed"
+
+rule get_pileup_locations:
+    input: expand("sunk_pileup/{sample}.sorted.bam_sunk.bw", sample=MANIFEST.sample_name)
+    output: "clone_locations.bed"
+    params: sge_opts = "-l mfree=1G -l h_rt=1:00:00"
+    run:
+        for file in input:
+            fn = os.path.basename(file)
+            shell("""bigWigToBedGraph {file} /dev/stdout \
+            | awk 'OFS="\t" {{ print $1,$2,$3,".",$4 }}' \
+            | bedtools merge -i stdin -d 100000 -c 5 -o sum | sort -k 4,4rn \
+            | head -n 1 | awk 'OFS="\t" {{ print $1,$2,$3,$4,"{fn}" }}' >> {output}""")
+
+rule make_bw_pileup:
+    input: "bam/{sample}.sorted.bam"
+    output: "sunk_pileup/{sample}.sorted.bam_sunk.bw"
+    params: sge_opts="-N plp_{sample} -l h_rt=0:20:00 -l mfree=2G"
+    shell:
+        "python /net/eichler/vol2/local/inhousebin/sunks/pileups/sam_to_bw_pileup.py "
+        "--inSam {SNAKEMAKE_DIR}/{input} --contigs {CONTIGS} "
+        "--outdir {SNAKEMAKE_DIR}/sunk_pileup "
+        "--sunk_mask {SUNK_MASK} --track_url test"
 
 rule make_bam:
     input: "mapping/{sample}/{sample}/mrfast_out/{sample}.sam.gz"
     output: "bam/{sample}.sorted.bam", "bam/{sample}.sorted.bam.bai"
-    params: sge_opts="-l mfree=1G -l h_rt=0:30:00", output_prefix="bam/{sample}.sorted"
+    params: sge_opts="-N bam_{sample} -l mfree=1G -l h_rt=0:30:00", output_prefix="bam/{sample}.sorted"
     shell:
-        "zcat {input} | samtools view -b -t {SAMTOOLS_CONTIGS} - -S | samtools sort - {params.output_prefix}; "
+        "zcat {input} | samtools view -b -t {CONTIGS} - -S | samtools sort - -T $TMPDIR/{wildcards.sample} -o {output[0]}; "
         "samtools index {output[0]}"
 
 rule map:

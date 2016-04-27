@@ -5,12 +5,10 @@ manifest: manifest.tab
 barcode_fasta: /path/to/barcode.fa
 barcode_prefix: s_1_
 
-#mrsfast_path: /net/eichler/vol7/home/psudmant/local_installations/bin_RHEL6/mrsfastc-2.3.0.2
 mrsfast_path: /net/eichler/vol6/software/modules-sw/mrsfast/3.3.8/Linux/RHEL6/x86_64/mrsfast/mrsfast
 mrsfast_opts: "--outcomp -n 0 -e 2 --crop 36"
 
 hg38:
-    mask_track: /path/to/mask_track
-    #mrsfast_index: /net/eichler/vol2/eee_shared/assemblies/hg38/indexes/mrsfast_hg38/hg38.rmsk_and_trf.fa
+    sunk_mask: /net/eichler/vol2/eee_shared/assemblies/hg38/read_depth/illumina/hg38_sunk_mask_track_pad36_e0.dts
     mrsfast_index: /net/eichler/vol2/eee_shared/assemblies/hg38/indexes/mrsfastULTRA/hg38.rmsk_and_trf.fa
-    samtools_contigs: /net/eichler/vol2/eee_shared/assemblies/hg38/ucsc.hg38.fasta.fai
+    contigs: /net/eichler/vol2/eee_shared/assemblies/hg38/ucsc.hg38.fasta.fai
