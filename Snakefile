@@ -62,7 +62,8 @@ rule make_bw_pileup:
 rule make_bam:
     input: "mapping/{sample}/{sample}/mrfast_out/{sample}.sam.gz"
     output: "bam/{sample}.sorted.bam", "bam/{sample}.sorted.bam.bai"
-    params: sge_opts="-N bam_{sample} -l mfree=1G -l h_rt=0:30:00", output_prefix="bam/{sample}.sorted"
+    params: sge_opts="-N bam_{sample} -l mfree=1G -l h_rt=0:30:00",
+            output_prefix="bam/{sample}.sorted"
     shell:
         "zcat {input} | samtools view -b -t {CONTIGS} - -S | samtools sort - -T $TMPDIR/{wildcards.sample} -o {output[0]}; "
         "samtools index {output[0]}"
@@ -70,22 +71,31 @@ rule make_bam:
 rule map:
     input: get_well_split_fq_from_sample
     output: "mapping/{sample}/{sample}/mrfast_out/{sample}.sam.gz"
-    params: sge_opts="-N map_{sample} -l mfree=4G -l h_rt=1:0:0:0", output_prefix="mapping/{sample}/{sample}/mrfast_out/{sample}"
+    params: sge_opts="-N map_{sample} -l mfree=4G -l h_rt=1:0:0:0",
+            output_prefix="mapping/{sample}/{sample}/mrfast_out/{sample}"
     shell:
         "zcat {input} | {MRSFAST_BINARY} --search {MRSFAST_INDEX} {MRSFAST_OPTS} --seq /dev/stdin -o {output} --disable-nohit"
 
 rule split_fastq:
+    input: ["merged_megapool_lanes_by_barcode/{well}/{well}.%d.fastq.gz" % num for num in [1,2]]
     output: ["mapping/{well}/{well}/fastq_split/{well}.%d_part0.fastq.gz" % num for num in [1, 2]] 
-    params: sge_opts="-N split_{well} -q eichler-short.q -l h_rt=6:00:00 -pe orte 2", 
+    params: sge_opts="-N split_{well} -q eichler-short.q -l h_rt=6:00:00 -pe orte 5-10 -l disk_free=10G", 
             input_dir="%s/split_barcodes/{well}/{well}/fastq" % SNAKEMAKE_DIR,
             output_dir="%s/mapping/{well}/{well}/fastq_split" % SNAKEMAKE_DIR
-    shell:
-        "~jlhudd/pipelines/read_depth/scripts/do_splitup_fastqs.sh -i {params.input_dir} -o {params.output_dir}"
+    run: 
+        #"~jlhudd/pipelines/read_depth/scripts/do_splitup_fastqs.sh -i {params.input_dir} -o {params.output_dir}
+        for i in [1,2]:
+            infile = [fn for fn in input if fn.endswith(".%d.fastq.gz" % i)][0]
+            outfile = [fn for fn in input if fn.endswith(".%d_part0.fastq.gz" % i)][0]
+            of = os.path.basename(outfile)
+            shell('mpirun -x PATH -x LD_LIBRARY_PATH --prefix $MPIBASE -mca plm ^rshd -mca btl ^openib '
+            '/net/eichler/vol4/home/a5ko/bin/readSplit -s 36 -k 36 -n 1000000 -i {infile} -o $TMPDIR/{of}; '
+            'rsync $TMPDIR/{of} {outfile}')
 
 rule demultiplex_fastq:
     input: ["fastq/%s%d.fq.gz" % (BARCODE_PREFIX, num) for num in [1,2,3]]
     output: "split_barcodes/{well}/{well}/fastq/{well}.1.fastq.gz", "split_barcodes/{well}/{well}/fastq/{well}.2.fastq.gz"
-    params:
+    params: sge_opts=""
     shell:
         "/net/eichler/vol7/home/psudmant/EEE_Lab/projects/fastq_utils/code/parse_barcodes_new/parse_barcodes.py "
         "--barcodes_fa {BARCODE_FASTA} --input_fastq {input[0]} --input_fastq_pe2 {input[2]} "
