@@ -30,7 +30,8 @@ if not os.path.exists("log"):
 
 def get_well_split_fq_from_sample(wildcards):
     well = MANIFEST.loc[wildcards.sample, "well"]
-    return ["mapping/{well}/{well}/fastq_split/{well}.{num}_part0.fastq.gz".format(well=well, num=num) for num in [1, 2]]
+    reads = MANIFEST.loc[wildcards.sample, "reads"].split(",")
+    return ["mapping/{well}/{well}/fastq_split/{well}.{num}_part0.fastq.gz".format(well=well, num=num) for num in range(len(reads))]
 
 localrules: all
 
@@ -41,7 +42,7 @@ rule get_pileup_locations:
     input: expand("sunk_pileup/{sample}.sorted.bam_sunk.bw", sample=MANIFEST.sample_name)
     output: "clone_locations.bed"
     params: sge_opts = "-l mfree=1G -l h_rt=1:00:00"
-    benchmark: "benchmarks/clone_loc/{sample}.txt"
+    benchmark: "benchmarks/clone_loc.txt"
     run:
         for file in input:
             fn = os.path.basename(file)
@@ -81,12 +82,12 @@ rule map:
         "zcat {input} | {MRSFAST_BINARY} --search {MRSFAST_INDEX} {MRSFAST_OPTS} --seq /dev/stdin -o {params.output_prefix} --disable-nohit"
 
 rule split_fastq:
-    input: "merged_megapool_lanes_by_barcode/{well}/{well}.{num}.fastq.gz"
+    input: lambda wildcards: MANIFEST.loc[MANIFEST.well == wildcards.well, "reads"][0].split(",")[int(wildcards.num)]
     output: "mapping/{well}/{well}/fastq_split/{well}.{num}_part0.fastq.gz"
     params: sge_opts="-N split_{well} -q eichler-short.q -l h_rt=6:00:00 -pe orte 5-10 -l disk_free=10G", 
             input_dir="%s/split_barcodes/{well}/{well}/fastq" % SNAKEMAKE_DIR,
             output_dir="%s/mapping/{well}/{well}/fastq_split" % SNAKEMAKE_DIR
-    benchmark: "benchmarks/split_fastq/{sample}.txt"
+    benchmark: "benchmarks/split_fastq/{well}.txt"
     run: 
         fn = os.path.basename(input[0])
         if input[0].endswith(".bam"):
