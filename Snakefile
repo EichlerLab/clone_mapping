@@ -92,7 +92,7 @@ rule map:
     input: get_well_split_fq_from_sample
     output: "mapping/{sample}/{sample}/mrsfast_out/{sample}.sam.gz"
     params: sge_opts="-N map_{sample} -l mfree=4G -l h_rt=1:0:0:0",
-            output_prefix="mapping/{sample}/{sample}/mrfast_out/{sample}"
+            output_prefix="mapping/{sample}/{sample}/mrsfast_out/{sample}"
     benchmark: "benchmarks/map/{sample}.txt"
     shell:
         "zcat {input} | {MRSFAST_BINARY} --search {MRSFAST_INDEX} {MRSFAST_OPTS} --seq /dev/stdin -o {params.output_prefix} --disable-nohit"
