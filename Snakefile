@@ -51,6 +51,8 @@ rule get_pileup_locations:
     params: sge_opts = "-l mfree=1G -l h_rt=1:00:00"
     benchmark: "benchmarks/clone_loc.txt"
     run:
+        if os.path.exists(output[0]):
+            os.remove(output[0])
         for file in input:
             fn = os.path.basename(file)
             shell("""bigWigToBedGraph {file} /dev/stdout \
