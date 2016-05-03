@@ -1,2 +1,3 @@
 well	barcode	sample_name	reads
 BC1_D2	test	BC1_D2	/net/eichler/vol24/projects/sequencing/nextseq500/nobackups/bnelsj/nextseq_testing/merged_megapool_lanes_by_barcode/BC1_D2/BC1_D2.1.fastq.gz,/net/eichler/vol24/projects/sequencing/nextseq500/nobackups/bnelsj/nextseq_testing/merged_megapool_lanes_by_barcode/BC1_D2/BC1_D2.2.fastq.gz
+261C14	test	VMRC64	/net/eichler/vol24/projects/sequencing/miseq/nobackups/washu/washu/VMRC64-261C14.1.bam
