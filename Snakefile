@@ -102,7 +102,7 @@ rule map:
 rule split_fastq:
     input: lambda wildcards: MANIFEST.loc[wildcards.sample, "reads"].split(",")[int(wildcards.num)-1]
     output: "mapping/{sample}/{sample}/fastq_split/{sample}.{num}_part0.fastq.gz"
-    params: sge_opts="-N split_{sample} -q eichler-short.q -l h_rt=6:00:00 -pe orte 5-10 -l disk_free=10G", 
+    params: sge_opts="-N split_{sample} -q eichler-short.q -l h_rt=6:00:00 -pe orte 5-10 -l disk_free=10G -l mfree=1G", 
             input_dir="%s/split_barcodes/{sample}/{sample}/fastq" % SNAKEMAKE_DIR,
             output_dir="%s/mapping/{sample}/{sample}/fastq_split" % SNAKEMAKE_DIR
     benchmark: "benchmarks/split_fastq/{sample}.txt"
