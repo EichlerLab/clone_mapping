@@ -65,6 +65,8 @@ rule make_tracks:
     output: "clone_mapping_tracklist.txt"
     shell:
         "cat {input} > {output}; "
+        "mkdir -p {TRACK_OUTPUT_DIR}; "
+        "chmod 755 {TRACK_OUTPUT_DIR}; "
         "rsync -arv --bwlimit=70000 sunk_pileup/*.bw {TRACK_OUTPUT_DIR}; "
         "rsync {output[0]} {TRACK_OUTPUT_DIR}; "
         "chmod 644 {TRACK_OUTPUT_DIR}/*"
