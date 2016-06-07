@@ -1,5 +1,8 @@
 import os
 import pandas as pd
+import tempfile
+
+TMPDIR = tempfile.gettempdir()
 
 SNAKEMAKE_DIR = os.path.dirname(workflow.snakefile)
 
