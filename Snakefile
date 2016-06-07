@@ -107,26 +107,14 @@ rule map:
 rule split_fastq:
     input: lambda wildcards: MANIFEST.loc[wildcards.sample, "reads"].split(",")[int(wildcards.num)-1]
     output: "mapping/{sample}/{sample}/fastq_split/{sample}.{num}_part0.fastq.gz"
-    params: sge_opts="-N split_{sample} -q eichler-short.q -l h_rt=6:00:00 -pe orte 4 -l disk_free=10G -l mfree=1G", 
+    params: sge_opts="-N split_{sample} -l h_rt=6:00:00 -l disk_free=10G -l mfree=1G",
             input_dir="%s/split_barcodes/{sample}/{sample}/fastq" % SNAKEMAKE_DIR,
-            output_dir="%s/mapping/{sample}/{sample}/fastq_split" % SNAKEMAKE_DIR
+            output_dir="%s/mapping/{sample}/{sample}/fastq_split" % SNAKEMAKE_DIR,
+            split_read_length=36
     benchmark: "benchmarks/split_fastq/{sample}.txt"
-    run: 
-        fn = os.path.basename(input[0])
-        if input[0].endswith(".bam"):
-            infile = os.path.abspath("mapping/%s/%s/%s" % (wildcards.sample, wildcards.sample, fn.replace(".bam", ".fastq")))
-            shell("""bamToFastq -i {input} -fq /dev/stdout -fq2 /dev/stdout > {infile}; bgzip {infile}""")
-            infile += ".gz"
-        elif input[0].endswith(".fastq.gz"):
-            infile = input[0]
-        else:
-            print("File %s not supported. Must be bam or fastq.gz.")
-            sys.exit(1)
-        of = os.path.basename(infile).replace(".fastq.gz", "_part0.fastq.gz")
-        print("\n".join([input[0], infile, output[0], of]))
-        shell("mpirun -x PATH -x LD_LIBRARY_PATH --prefix $MPIBASE -mca plm ^rshd -mca btl ^openib "
-                 "/net/eichler/vol4/home/a5ko/bin/readSplit -s 36 -k 36 -n 1000000 -i {infile} -o $TMPDIR; "
-                 "rsync --bwlimit=50000 $TMPDIR/{of} {output}")
+    shell:
+        "python split_reads.py --full_length_only {input} {params.split_read_length} | bgzip -c > {TMPDIR}/`basename {output}`; "
+        "rsync --bwlimit=50000 {TMPDIR}/`basename {output}` {output}"
 
 #rule demultiplex_fastq:
 #    input: ["fastq/%s%d.fq.gz" % (BARCODE_PREFIX, num) for num in [1,2,3]]
