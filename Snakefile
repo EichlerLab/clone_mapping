@@ -88,7 +88,7 @@ rule make_bw_pileup:
 rule make_bam:
     input: "mapping/{sample}/{sample}/mrsfast_out/{sample}.sam.gz"
     output: "bam/{sample}.sorted.bam", "bam/{sample}.sorted.bam.bai"
-    params: sge_opts="-N bam_{sample} -l mfree=1G -l h_rt=0:30:00",
+    params: sge_opts="-N bam_{sample} -l mfree=4G -l h_rt=0:30:00",
             output_prefix="bam/{sample}.sorted"
     benchmark: "benchmarks/make_bam/{sample}.txt"
     shell:
