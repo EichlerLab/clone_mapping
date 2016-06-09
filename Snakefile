@@ -48,22 +48,22 @@ rule clean:
     shell:
         "rm bam/* mapping/*/*/mrsfast_out/* mapping/*/*/fastq_split/*"
 
-rule get_pileup_locations:
-    input: expand("sunk_pileup/{sample}.sorted.bam_sunk.bw", sample=MANIFEST.sample_name)
+rule collect_pileup_locations:
+    input: expand("clone_locations/{sample}.bed", sample=MANIFEST.sample_name)
     output: "clone_locations.bed"
-    params: sge_opts = "-l mfree=1G -l h_rt=1:00:00"
+    params: sge_opts = "-l mfree=1G -l h_rt=00:10:00"
     benchmark: "benchmarks/clone_loc.txt"
-    run:
-        if os.path.exists(output[0]):
-            os.remove(output[0])
-        for file in input:
-            fn = os.path.basename(file)
-            shell("""bigWigToBedGraph {file} /dev/stdout \
+    shell: "sort -k 5,5V {input} > {output}"
+
+rule get_pileup_locations:
+    input: "sunk_pileup/{sample}.sorted.bam_sunk.bw"
+    output: "clone_locations/{sample}.bed"
+    params: sge_opts = "-l mfree=1G -l h_rt=00:10:00"
+    benchmark: "benchmarks/clone_locations/{sample}.txt"
+    shell: """bigWigToBedGraph {input} /dev/stdout \
             | awk 'OFS="\\t" {{ print $1,$2,$3,".",$4 }}' \
             | bedtools merge -i stdin -d 100000 -c 5 -o sum | sort -k 4,4rn \
-            | head -n 1 | awk 'OFS="\\t" {{ print $1,$2,$3,$4,"{fn}" }}' >> {output}""")
-
-        shell("sort -k 5,5V -o {output} {output}")
+            | head -n 1 | awk 'OFS="\\t" {{ print $1,$2,$3,$4,"{wildcards.sample}" }}' > {output}"""
 
 rule make_tracks:
     input: expand("sunk_pileup/{sample}.sorted.bam_sunk.bw.trackdef", sample=MANIFEST.sample_name)
