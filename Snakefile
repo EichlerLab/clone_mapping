@@ -59,9 +59,9 @@ rule get_pileup_locations:
         for file in input:
             fn = os.path.basename(file)
             shell("""bigWigToBedGraph {file} /dev/stdout \
-            | awk 'OFS="\t" {{ print $1,$2,$3,".",$4 }}' \
+            | awk 'OFS="\\t" {{ print $1,$2,$3,".",$4 }}' \
             | bedtools merge -i stdin -d 100000 -c 5 -o sum | sort -k 4,4rn \
-            | head -n 1 | awk 'OFS="\t" {{ print $1,$2,$3,$4,"{fn}" }}' >> {output}""")
+            | head -n 1 | awk 'OFS="\\t" {{ print $1,$2,$3,$4,"{fn}" }}' >> {output}""")
 
         shell("sort -k 5,5V -o {output} {output}")
 
