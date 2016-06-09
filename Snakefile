@@ -61,13 +61,14 @@ rule get_pileup_locations:
             shell("""bigWigToBedGraph {file} /dev/stdout \
             | awk 'OFS="\t" {{ print $1,$2,$3,".",$4 }}' \
             | bedtools merge -i stdin -d 100000 -c 5 -o sum | sort -k 4,4rn \
-            | head -n 1 | awk 'OFS="\t" {{ print $1,$2,$3,$4,"{fn}" }}' >> {output}""")
+            | head -n 1 | awk 'OFS="\t" {{ print $1,$2,$3,$4,"{fn}" }}' \
+            | sort -k 5,5V >> {output}""")
 
 rule make_tracks:
     input: expand("sunk_pileup/{sample}.sorted.bam_sunk.bw.trackdef", sample=MANIFEST.sample_name)
     output: "clone_mapping_tracklist.txt"
     shell:
-        "cat {input} > {output}; "
+        "sort -V {input} > {output}; "
         "mkdir -p {TRACK_OUTPUT_DIR}; "
         "chmod 755 {TRACK_OUTPUT_DIR}; "
         "rsync -arv --bwlimit=70000 sunk_pileup/*.bw {TRACK_OUTPUT_DIR}; "
