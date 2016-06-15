@@ -94,7 +94,7 @@ rule make_bam:
             output_prefix="bam/{sample}.sorted"
     benchmark: "benchmarks/make_bam/{sample}.txt"
     shell:
-        "zcat {input} | samtools view -b -t {CONTIGS} - -S | samtools sort - -T {TMPDIR}/{wildcards.sample} -o {output[0]}; "
+        "zcat {input} | samtools view -b -t {CONTIGS} - -S | samtools sort - -T {TMPDIR}/{wildcards.sample} -o {output[0]} -m 2G; "
         "samtools index {output[0]}"
 
 rule map:
