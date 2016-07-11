@@ -100,7 +100,7 @@ rule make_bam:
 rule map:
     input: get_well_split_fq_from_sample
     output: "mapping/{sample}/{sample}/mrsfast_out/{sample}.sam.gz"
-    params: sge_opts="-N map_{sample} -l mfree=6G -l h_rt=01:00:00",
+    params: sge_opts="-N map_{sample} -l mfree=6G -l h_rt=04:00:00",
             output_prefix="mapping/{sample}/{sample}/mrsfast_out/{sample}"
     benchmark: "benchmarks/map/{sample}.txt"
     shell:
