@@ -19,7 +19,6 @@ BARCODE_PREFIX = config["barcode_prefix"]
 
 TRACK_OUTPUT_DIR = config["track_output_dir"]
 TRACK_URL = config["track_url"]
-PASSWORD = os.environ["EICHLERLAB_PASSWORD"]
 
 MRSFAST_BINARY = config["mrsfast_path"]
 MRSFAST_OPTS = config["mrsfast_opts"]
@@ -39,7 +38,7 @@ def get_well_split_fq_from_sample(wildcards):
     reads = MANIFEST.loc[wildcards.sample, "reads"].split(",")
     return ["mapping/{sample}/{sample}/fastq_split/{sample}.{num}_part0.fastq.gz".format(sample=wildcards.sample, num=num) for num in range(1, len(reads)+1)]
 
-localrules: all, make_tracks, clean
+localrules: all, make_tracks, make_bams, clean
 
 rule all:
     input: "clone_locations.bed", "clone_mapping_tracklist.txt"
@@ -81,11 +80,18 @@ rule make_bw_pileup:
     output: "sunk_pileup/{sample}.sorted.bam_sunk.bw", "sunk_pileup/{sample}.sorted.bam_sunk.bw.trackdef"
     params: sge_opts="-N plp_{sample} -l h_rt=0:20:00 -l mfree=2G"
     benchmark: "benchmarks/pileup/{sample}.txt"
-    shell:
-        "python /net/eichler/vol2/local/inhousebin/sunks/pileups/sam_to_bw_pileup.py "
+    run:
+        if "EICHLERLAB_PASSWORD" not in os.environ:
+            print("Error: Shell variable 'EICHLERLAB_PASSWORD' not set. Exitting...")
+            sys.exit(1)
+        PASSWORD = os.environ["EICHLERLAB_PASSWORD"]
+        shell("python /net/eichler/vol2/local/inhousebin/sunks/pileups/sam_to_bw_pileup.py "
         "--inSam {SNAKEMAKE_DIR}/{input} --contigs {CONTIGS} "
         "--outdir {SNAKEMAKE_DIR}/sunk_pileup "
-        "--sunk_mask {SUNK_MASK} --track_url https://eee:{PASSWORD}@{TRACK_URL}"
+        "--sunk_mask {SUNK_MASK} --track_url https://eee:{PASSWORD}@{TRACK_URL}")
+
+rule make_bams:
+    input: expand("bam/{sample}.sorted.{ext}", sample=MANIFEST.sample_name, ext=[".bam", ".bai"])
 
 rule make_bam:
     input: "mapping/{sample}/{sample}/mrsfast_out/{sample}.sam.gz"
