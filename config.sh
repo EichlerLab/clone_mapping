@@ -9,5 +9,7 @@ export PYTHONPATH=$PYTHONPATH:/net/eichler/vol7/home/psudmant/EEE_Lab/1000G/1000
 
 module load modules modules-init modules-gs/prod modules-eichler/prod
 
-module load samtools/1.3 bedtools/2.23.0 mrsfast/3.3.8 anaconda/2.3.0 ucsc/20140617 openmpi/1.5.4 tabix/0.2.6
+module load samtools/1.3 bedtools/2.23.0 mrsfast/3.3.8 anaconda/2.3.0 ucsc/20140617
+module load tabix/0.2.6
+module load openmpi-1.5.4-x86_64
 
