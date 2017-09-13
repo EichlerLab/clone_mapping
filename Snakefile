@@ -34,6 +34,10 @@ MANIFEST.index = MANIFEST.sample_name
 if not os.path.exists("log"):
     os.makedirs("log")
 
+def get_sample_and_num(wildcards):
+    reads = MANIFEST.loc[wildcards.sample, "reads"].split(",")
+    return ["read_counts/raw/{sample}.{num}.txt".format(sample=wildcards.sample, num=num) for num in range(1, len(reads)+1)]
+
 def get_well_split_fq_from_sample(wildcards):
     reads = MANIFEST.loc[wildcards.sample, "reads"].split(",")
     return ["mapping/{sample}/{sample}/fastq_split/{sample}.{num}_part0.fastq.gz".format(sample=wildcards.sample, num=num) for num in range(1, len(reads)+1)]
@@ -48,11 +52,11 @@ rule clean:
         "rm bam/* mapping/*/*/mrsfast_out/* mapping/*/*/fastq_split/*"
 
 rule get_mapping_stats:
-    input: "clone_locations.bed", "bam/bamlist.txt"
+    input: "clone_locations.bed", "bam/bamlist.txt", "read_counts/combined.tab"
     output: "clone_locations.annotated.tab"
     params: sge_opts = "-l mfree=4G -l h_rt=01:00:00", sunks=config[REFERENCE]["sunk_bed"], cores=config[REFERENCE]["cores"]
     shell:
-        "python get_clone_mapping_stats.py {input[0]} {params.sunks} {output} --cores {params.cores} --bamlist {input[1]}"
+        "python get_clone_mapping_stats.py {input[0]} {params.sunks} {output} --cores {params.cores} --bamlist {input[1]} --read_counts {input[2]}"
 
 rule collect_pileup_locations:
     input: expand("clone_locations/{sample}.bed", sample=MANIFEST.sample_name)
@@ -127,15 +131,36 @@ rule map:
     shell:
         "zcat {input} | {MRSFAST_BINARY} --search {MRSFAST_INDEX} {MRSFAST_OPTS} --seq /dev/stdin -o {params.output_prefix} --disable-nohit"
 
+rule merge_read_counts:
+    input: expand("read_counts/merged/{sample}.txt", sample=MANIFEST.sample_name)
+    output: "read_counts/combined.tab"
+    params: sge_opts="-l mfree=1G -l h_rt=1:0:0"
+    shell:
+        """echo -e "clone\\treads" > {output}
+           cat {input} >> {output}"""
+
+rule merge_read_counts_by_sample:
+    input: get_sample_and_num
+    output: "read_counts/merged/{sample}.txt"
+    params: sge_opts="-l mfree=1G -l h_rt=1:0:0"
+    run:
+        count = 0
+        for fn in input:
+            with open(fn, "r") as infile:
+                sn_num, reads = infile.readlines()[0].rstrip().split()
+                count += int(reads)
+        with open(output[0], "w") as outfile:
+            print(wildcards.sample, count, sep="\t", file=outfile)
+
 rule split_fastq:
     input: lambda wildcards: MANIFEST.loc[wildcards.sample, "reads"].split(",")[int(wildcards.num)-1]
-    output: "mapping/{sample}/{sample}/fastq_split/{sample}.{num}_part0.fastq.gz"
+    output: "mapping/{sample}/{sample}/fastq_split/{sample}.{num}_part0.fastq.gz", "read_counts/raw/{sample}.{num}.txt"
     params: sge_opts="-N split_{sample} -l h_rt=6:00:00 -l disk_free=10G -l mfree=1G",
             split_read_length=36
-    benchmark: "benchmarks/split_fastq/{sample}.txt"
+    benchmark: "benchmarks/split_fastq/{sample}.{num}.txt"
     shell:
-        "python split_reads.py --full_length_only {input} {params.split_read_length} | bgzip -c > {TMPDIR}/`basename {output}`; "
-        "rsync --bwlimit=50000 {TMPDIR}/`basename {output}` {output}"
+        "python split_reads.py --full_length_only {input} --read_counts {output[1]} --clone_name {wildcards.sample}.{wildcards.num} {params.split_read_length} | "
+        "bgzip -c | pv -L 50000K > {output[0]}"
 
 #rule demultiplex_fastq:
 #    input: ["fastq/%s%d.fq.gz" % (BARCODE_PREFIX, num) for num in [1,2,3]]

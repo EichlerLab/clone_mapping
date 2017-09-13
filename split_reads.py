@@ -1,4 +1,6 @@
 #!/bin/env python
+from __future__ import print_function
+
 import argparse
 import math
 import operator
@@ -93,6 +95,8 @@ if __name__ == "__main__":
     parser.add_argument("window", type=int, help="length to fragment each sequence to")
     parser.add_argument("--slide", type=int, default=0, help="length to slide the given window size across the input sequences")
     parser.add_argument("--full_length_only", action="store_true", help="omit sequences that are shorter than the requested window size")
+    parser.add_argument("--read_counts", default=None, help="File to write read counts to")
+    parser.add_argument("--clone_name", default="dummy", help="Name of clone for read_counts file")
     args = parser.parse_args()
 
     if args.input.endswith(".bam"):
@@ -102,7 +106,7 @@ if __name__ == "__main__":
         input_file = pysam.FastqFile(args.input)
         is_bam = False
 
-    for record in input_file:
+    for rcount, record in enumerate(input_file):
         if is_bam:
             record_name = "%s_%s" % (record.qname, (record.is_read1 and "1" or "2"))
             sequence = record.seq
@@ -117,7 +121,11 @@ if __name__ == "__main__":
 
         for i in xrange(len(sequences)):
             if not args.full_length_only or len(sequences[i]) == args.window:
-                print "@%s_%s" % (record_name, i)
-                print sequences[i]
-                print "+"
-                print qualities[i]
+                print("@%s_%s" % (record_name, i))
+                print(sequences[i])
+                print("+")
+                print(qualities[i])
+
+    if args.read_counts is not None:
+        with open(args.read_counts, "w") as outfile:
+            print(args.clone_name, rcount, sep="\t", file=outfile)

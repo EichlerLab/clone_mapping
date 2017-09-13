@@ -11,6 +11,7 @@ if __name__ == "__main__":
     parser.add_argument("sunks", help="bed file with genome-wide sunk positions")
     parser.add_argument("--cores", default=None, help="Bed file with pseudocore locations as in Dennis et al. 2017")
     parser.add_argument("--bamlist", default=None, help="Tab-delimited file with clone name and and bam columns. Required for --cores")
+    parser.add_argument("--read_counts", default=None, help="Tab-delimited file with clone and reads columns")
     parser.add_argument("output")
 
     args = parser.parse_args()
@@ -36,6 +37,12 @@ if __name__ == "__main__":
     merged = dat.merge(sunk_dat, how="left", left_index=True, right_index=True)
     merged["sunk_depth"] = merged.sunk_hits / merged.sunk_bases
 
+    if args.read_counts is not None:
+        rc = pd.read_table(args.read_counts)
+        rc.index = rc.clone
+        merged = merged.merge(rc, left_index=True, right_index=True)
+        merged = merged[[col for col in merged.columns if col not in ["clone"]]]
+
     if args.cores is not None:
         cores = pybedtools.BedTool(args.cores)
         bamfiles = pd.read_table(args.bamlist, header=None, names=["clone", "bamfile"])
@@ -48,9 +55,7 @@ if __name__ == "__main__":
             total_cov[clone] = sum([int(entry[4]) for entry in cov])
         cov_dat = pd.DataFrame.from_dict(total_cov, orient="index")
         cov_dat.columns = ["core_hits"]
-        final = merged.merge(cov_dat, how="left", left_index=True, right_index=True)
-    else:
-        final = merged
-    final.to_csv(args.output, sep="\t", index=False)
+        merged = merged.merge(cov_dat, how="left", left_index=True, right_index=True)
+    merged.to_csv(args.output, sep="\t", index=False)
 
 
