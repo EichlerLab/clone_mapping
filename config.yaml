@@ -13,5 +13,7 @@ track_url: eichlerlab.gs.washington.edu/help/`whoami`/tracks
 
 hg38:
     sunk_mask: /net/eichler/vol2/eee_shared/assemblies/hg38/read_depth/illumina/hg38_sunk_mask_track_pad36_e0.dts
+    sunk_bed: /net/eichler/vol2/eee_shared/assemblies/hg38/sunks/hg38_sunks.bed
     mrsfast_index: /net/eichler/vol2/eee_shared/assemblies/hg38/indexes/mrsfastULTRA/hg38.rmsk_and_trf.fa
     contigs: /net/eichler/vol2/eee_shared/assemblies/hg38/ucsc.hg38.fasta.fai
+    cores: /net/eichler/vol2/eee_shared/assemblies/hg38/cores/pseudocores.bed

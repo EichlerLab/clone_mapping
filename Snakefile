@@ -47,6 +47,13 @@ rule clean:
     shell:
         "rm bam/* mapping/*/*/mrsfast_out/* mapping/*/*/fastq_split/*"
 
+rule get_mapping_stats:
+    input: "clone_locations.bed", "bam/bamlist.txt"
+    output: "clone_locations.annotated.tab"
+    params: sge_opts = "-l mfree=4G -l h_rt=01:00:00", sunks=config[REFERENCE]["sunk_bed"], cores=config[REFERENCE]["cores"]
+    shell:
+        "python get_clone_mapping_stats.py {input[0]} {params.sunks} {output} --cores {params.cores} --bamlist {input[1]}"
+
 rule collect_pileup_locations:
     input: expand("clone_locations/{sample}.bed", sample=MANIFEST.sample_name)
     output: "clone_locations.bed"
@@ -91,8 +98,16 @@ rule make_bw_pileup:
         "--sunk_mask {SUNK_MASK} --track_url https://eee:{PASSWORD}@{TRACK_URL}")
 
 rule make_bams:
-    input: expand("bam/{sample}.sorted.{ext}", sample=MANIFEST.sample_name, ext=[".bam", ".bai"])
-
+    input: expand("bam/{sample}.sorted.{ext}", sample=MANIFEST.sample_name, ext=["bam", "bam.bai"])
+    output: "bam/bamlist.txt"
+    params: sge_opts="-l mfree=1G -l h_rt=1:0:0"
+    run:
+        with open(output[0], "w") as outfile:
+            for clone in MANIFEST.sample_name:
+                cwd = os.getcwd()
+                fn = "%s/bam/%s.sorted.bam" % (cwd, clone)
+                print(clone, fn, sep="\t", file=outfile)
+            
 rule make_bam:
     input: "mapping/{sample}/{sample}/mrsfast_out/{sample}.sam.gz"
     output: "bam/{sample}.sorted.bam", "bam/{sample}.sorted.bam.bai"
