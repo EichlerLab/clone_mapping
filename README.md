@@ -2,6 +2,25 @@
 
 Pipeline for generating SUNK pileups from Nextera-based clone sequence data.
 
+## Quick start
+
+Add your samples to the manifest (```manifest.tab```) and check that the settings in ```config.yaml``` make sense for your analysis, then run:
+```bash
+snakesub -j 20 -w 60 -kT
+```
+where snakesub is aliased to:
+```bash
+snakemake --drmaa " -V -cwd -w n -e ./log -o ./log {params.sge_opts} -S /bin/bash"
+```
+
+## Full stats
+
+To run the pipeline with additional statistics (SUNK coverage and core hits), add ```get_mapping_stats``` to the snakemake command: 
+```bash
+snakesub -j 20 -w 60 -kT get_mapping_stats
+```
+Make sure the reference and reference files settings in ```config.yaml``` make sense for your analysis.
+
 ## Troubleshooting
 
 Most jobs are killed by our cluster management either for using too much memory
