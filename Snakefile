@@ -7,7 +7,7 @@ TMPDIR = tempfile.gettempdir()
 SNAKEMAKE_DIR = os.path.dirname(workflow.snakefile)
 
 shell.executable("/bin/bash")
-shell.prefix("source %s/config.sh; set -eo pipefail; " % SNAKEMAKE_DIR)
+shell.prefix("source %s/env.cfg; set -eo pipefail; " % SNAKEMAKE_DIR)
 
 if config == {}:
     configfile: "%s/config.yaml" % SNAKEMAKE_DIR
@@ -56,6 +56,7 @@ rule get_mapping_stats:
     output: "clone_locations.annotated.tab"
     params: sge_opts = "-l mfree=4G -l h_rt=01:00:00", sunks=config[REFERENCE]["sunk_bed"], cores=config[REFERENCE]["cores"]
     shell:
+        ". python3.env.cfg; "
         "python get_clone_mapping_stats.py {input[0]} {params.sunks} {output} --cores {params.cores} --bamlist {input[1]} --read_counts {input[2]}"
 
 rule collect_pileup_locations:
