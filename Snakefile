@@ -52,7 +52,7 @@ rule clean:
         "rm bam/* mapping/*/*/mrsfast_out/* mapping/*/*/fastq_split/*"
 
 rule get_mapping_stats:
-    input: "clone_locations.bed", "bam/bamlist.txt", "read_counts/combined.tab"
+    input: "clone_locations.bed", "bam/bamlist.txt", "read_counts/combined.tab", "clone_mapping_tracklist.txt"
     output: "clone_locations.annotated.tab"
     params: sge_opts = "-l mfree=4G -l h_rt=01:00:00", sunks=config[REFERENCE]["sunk_bed"], cores=config[REFERENCE]["cores"]
     shell:
