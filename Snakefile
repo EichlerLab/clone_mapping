@@ -54,7 +54,7 @@ rule clean:
 rule get_mapping_stats:
     input: "clone_locations.bed", "bam/bamlist.txt", "read_counts/combined.tab", "clone_mapping_tracklist.txt"
     output: "clone_locations.annotated.tab"
-    params: sge_opts = "-l mfree=4G -l h_rt=01:00:00", sunks=config[REFERENCE]["sunk_bed"], cores=config[REFERENCE]["cores"]
+    params: sge_opts = "-l mfree=4G -l h_rt=1:00:00:00", sunks=config[REFERENCE]["sunk_bed"], cores=config[REFERENCE]["cores"]
     shell:
         ". python3.env.cfg; "
         "python get_clone_mapping_stats.py {input[0]} {params.sunks} {output} --cores {params.cores} --bamlist {input[1]} --read_counts {input[2]}"
