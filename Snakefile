@@ -52,12 +52,15 @@ rule clean:
         "rm bam/* mapping/*/*/mrsfast_out/* mapping/*/*/fastq_split/*"
 
 rule get_mapping_stats:
-    input: "clone_locations.bed", "bam/bamlist.txt", "read_counts/combined.tab", "clone_mapping_tracklist.txt"
+    input: clone_locs="clone_locations.bed",
+           cores="core_hits.bed",
+           read_counts="read_counts/combined.tab",
+           tracklist="clone_mapping_tracklist.txt"
     output: "clone_locations.annotated.tab"
-    params: sge_opts = "-l mfree=4G -l h_rt=1:00:00:00", sunks=config[REFERENCE]["sunk_bed"], cores=config[REFERENCE]["cores"]
+    params: sge_opts = "-l mfree=4G -l h_rt=1:00:00:00", sunks=config[REFERENCE]["sunk_bed"]
     shell:
         ". python3.env.cfg; "
-        "python get_clone_mapping_stats.py {input[0]} {params.sunks} {output} --cores {params.cores} --bamlist {input[1]} --read_counts {input[2]}"
+        "python get_clone_mapping_stats.py {input.clone_locs} {params.sunks} {output} --cores {input.cores} --read_counts {input.read_counts}"
 
 rule collect_pileup_locations:
     input: expand("clone_locations/{sample}.bed", sample=MANIFEST.sample_name)
@@ -75,6 +78,20 @@ rule get_pileup_locations:
             | awk 'OFS="\\t" {{ print $1,$2,$3,".",$4 }}' \
             | bedtools merge -i stdin -d 100000 -c 5 -o sum | sort -k 4,4rn \
             | awk 'OFS="\\t" {{ if (NR == 1) {{ print $1,$2,$3,$4,"{wildcards.sample}" }} }}' > {output}"""
+
+rule collect_core_hits:
+    input: expand("core_hits/{sample}.txt", sample=MANIFEST.sample_name)
+    output: "core_hits.bed"
+    params: sge_opts = "-l mfree=1G -l h_rt=00:10:00"
+    shell: "cat {input} > {output}"
+
+rule get_core_hits:
+    input: bam="bam/{sample}.sorted.bam", cores=config[REFERENCE]["cores"]
+    output: "core_hits/{sample}.txt"
+    params: sge_opts="-l mfree=4G -l h_rt=1:0:0"
+    shell:
+        """cov=`bedtools coverage -abam {input.bam} -b {input.cores} | cut -f 5 | paste -sd+ | bc`
+        echo -e "{wildcards.sample}\t$cov" > {output}"""
 
 rule make_tracks:
     input: expand("sunk_pileup/{sample}.sorted.bam_sunk.bw.trackdef", sample=MANIFEST.sample_name)
