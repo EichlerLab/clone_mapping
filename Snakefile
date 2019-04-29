@@ -110,14 +110,10 @@ rule make_bw_pileup:
     params: sge_opts="-N plp_{sample} -l h_rt=0:20:00 -l mfree=2G"
     benchmark: "benchmarks/pileup/{sample}.txt"
     run:
-        if "EICHLERLAB_PASSWORD" not in os.environ:
-            print("Error: Shell variable 'EICHLERLAB_PASSWORD' not set. Exitting...")
-            sys.exit(1)
-        PASSWORD = os.environ["EICHLERLAB_PASSWORD"]
         shell("python /net/eichler/vol2/local/inhousebin/sunks/pileups/sam_to_bw_pileup.py "
         "--inSam {SNAKEMAKE_DIR}/{input} --contigs {CONTIGS} "
         "--outdir {SNAKEMAKE_DIR}/sunk_pileup "
-        "--sunk_mask {SUNK_MASK} --track_url https://eee:{PASSWORD}@{TRACK_URL}")
+        "--sunk_mask {SUNK_MASK} --track_url https://{TRACK_URL}")
 
 rule make_bams:
     input: expand("bam/{sample}.sorted.{ext}", sample=MANIFEST.sample_name, ext=["bam", "bam.bai"])
