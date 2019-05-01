@@ -9,7 +9,7 @@ mrsfast_path: /net/eichler/vol6/software/modules-sw/mrsfast/3.3.8/Linux/RHEL6/x8
 mrsfast_opts: "--outcomp -n 0 -e 2 --crop 36"
 
 track_output_dir: ~/public_html/tracks
-track_url: eichlerlab.gs.washington.edu/help/`whoami`/tracks
+track_url: genometest2.gs.washington.edu/~`whoami`/tracks
 
 hg38:
     sunk_mask: /net/eichler/vol2/eee_shared/assemblies/hg38/read_depth/illumina/hg38_sunk_mask_track_pad36_e0.dts
