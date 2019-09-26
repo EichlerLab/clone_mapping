@@ -15,7 +15,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    dat = pd.read_table(args.input, header=None, names=["chr", "start", "end", "sunk_hits", "name"])
+    dat = pd.read_csv(args.input, header=None, names=["chr", "start", "end", "sunk_hits", "name"], sep='\t')
     dat.index = dat.name
 
     sunks = pybedtools.BedTool(args.sunks)
@@ -34,13 +34,13 @@ if __name__ == "__main__":
     merged["sunk_depth"] = merged.sunk_hits / merged.sunk_bases
 
     if args.read_counts is not None:
-        rc = pd.read_table(args.read_counts)
+        rc = pd.read_csv(args.read_counts, sep='\t')
         rc.index = rc.clone
         merged = merged.merge(rc, left_index=True, right_index=True)
         merged = merged[[col for col in merged.columns if col not in ["clone"]]]
 
     if args.cores is not None:
-        cores = pd.read_table(args.cores, header=None, names=["name", "core_hits"])
+        cores = pd.read_csv(args.cores, sep='\t', header=None, names=["name", "core_hits"])
         merged = merged.merge(cores, how="left", on="name")
     merged.to_csv(args.output, sep="\t", index=False)
 

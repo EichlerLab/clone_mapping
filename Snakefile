@@ -10,7 +10,7 @@ shell.executable("/bin/bash")
 shell.prefix("source %s/env.cfg; set -eo pipefail; " % SNAKEMAKE_DIR)
 
 if config == {}:
-    configfile: "%s/config.yaml" % SNAKEMAKE_DIR
+    configfile: "config.yaml"
 
 REFERENCE = config["reference"]
 
@@ -28,7 +28,7 @@ SUNK_MASK = config[REFERENCE]["sunk_mask"]
 
 MANIFEST_FILE = config["manifest"]
 
-MANIFEST = pd.read_table(MANIFEST_FILE)
+MANIFEST = pd.read_csv(MANIFEST_FILE, sep='\t')
 MANIFEST.index = MANIFEST.sample_name
 
 if not os.path.exists("log"):
@@ -59,7 +59,6 @@ rule get_mapping_stats:
     output: "clone_locations.annotated.tab"
     params: sge_opts = "-l mfree=4G -l h_rt=1:00:00:00", sunks=config[REFERENCE]["sunk_bed"]
     shell:
-        ". python3.env.cfg; "
         "python get_clone_mapping_stats.py {input.clone_locs} {params.sunks} {output} --cores {input.cores} --read_counts {input.read_counts}"
 
 rule collect_pileup_locations:
@@ -110,7 +109,7 @@ rule make_bw_pileup:
     params: sge_opts="-N plp_{sample} -l h_rt=0:20:00 -l mfree=2G"
     benchmark: "benchmarks/pileup/{sample}.txt"
     run:
-        shell("python /net/eichler/vol2/local/inhousebin/sunks/pileups/sam_to_bw_pileup.py "
+        shell("python /net/eichler/vol26/7200/software/legacy/inhousebin/sunks/pileups/sam_to_bw_pileup.py "
         "--inSam {SNAKEMAKE_DIR}/{input} --contigs {CONTIGS} "
         "--outdir {SNAKEMAKE_DIR}/sunk_pileup "
         "--sunk_mask {SUNK_MASK} --track_url https://{TRACK_URL}")
@@ -143,7 +142,7 @@ rule map:
             output_prefix="mapping/{sample}/{sample}/mrsfast_out/{sample}"
     benchmark: "benchmarks/map/{sample}.txt"
     shell:
-        "zcat {input} | {MRSFAST_BINARY} --search {MRSFAST_INDEX} {MRSFAST_OPTS} --seq /dev/stdin -o {params.output_prefix} --disable-nohit"
+        "zcat {input} | mrsfast --search {MRSFAST_INDEX} {MRSFAST_OPTS} --seq /dev/stdin -o {params.output_prefix} --disable-nohit"
 
 rule merge_read_counts:
     input: expand("read_counts/merged/{sample}.txt", sample=MANIFEST.sample_name)
