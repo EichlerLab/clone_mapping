@@ -1,3 +1,0 @@
-KeyError in line 27 of /net/eichler/vol26/home/wharvey/nobackups/clone_mapping/Snakefile:
-'script_dir'
-  File "/net/eichler/vol26/home/wharvey/nobackups/clone_mapping/Snakefile", line 27, in <module>
