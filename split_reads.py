@@ -27,9 +27,9 @@ def make_windows(length, window, slide):
     [(0, 7)]
     """
     if slide == 0:
-        windows = xrange(0, length, window)
+        windows = range(0, length, window)
     else:
-        windows = xrange(0, length, slide)
+        windows = range(0, length, slide)
 
     for start in windows:
         yield (start, min(start + window, length))
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         sequences = fragment_sequence(sequence, args.window, args.slide)
         qualities = fragment_sequence(quality, args.window, args.slide)
 
-        for i in xrange(len(sequences)):
+        for i in range(len(sequences)):
             if not args.full_length_only or len(sequences[i]) == args.window:
                 print("@%s_%s" % (record_name, i))
                 print(sequences[i])

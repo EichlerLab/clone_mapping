@@ -7,10 +7,9 @@ TMPDIR = tempfile.gettempdir()
 SNAKEMAKE_DIR = os.path.dirname(workflow.snakefile)
 
 shell.executable("/bin/bash")
-shell.prefix("source %s/env.cfg; set -eo pipefail; " % SNAKEMAKE_DIR)
 
 if config == {}:
-    configfile: "%s/config.yaml" % SNAKEMAKE_DIR
+    configfile: "config.yaml"
 
 REFERENCE = config["reference"]
 
@@ -25,11 +24,15 @@ MRSFAST_OPTS = config["mrsfast_opts"]
 MRSFAST_INDEX = config[REFERENCE]["mrsfast_index"]
 CONTIGS = config[REFERENCE]["contigs"]
 SUNK_MASK = config[REFERENCE]["sunk_mask"]
+SCRIPT_DIR = config["script_dir"]
 
 MANIFEST_FILE = config["manifest"]
 
-MANIFEST = pd.read_table(MANIFEST_FILE)
+MANIFEST = pd.read_csv(MANIFEST_FILE, sep='\t')
 MANIFEST.index = MANIFEST.sample_name
+
+shell.prefix("source %s/env.cfg; set -eo pipefail; export PYTHONPATH={SCRIPT_DIR}:$PYTHONPATH; " % SNAKEMAKE_DIR)
+
 
 if not os.path.exists("log"):
     os.makedirs("log")
@@ -59,8 +62,7 @@ rule get_mapping_stats:
     output: "clone_locations.annotated.tab"
     params: sge_opts = "-l mfree=4G -l h_rt=1:00:00:00", sunks=config[REFERENCE]["sunk_bed"]
     shell:
-        ". python3.env.cfg; "
-        "python get_clone_mapping_stats.py {input.clone_locs} {params.sunks} {output} --cores {input.cores} --read_counts {input.read_counts}"
+        "python {SNAKEMAKE_DIR}/get_clone_mapping_stats.py {input.clone_locs} {params.sunks} {output} --cores {input.cores} --read_counts {input.read_counts}"
 
 rule collect_pileup_locations:
     input: expand("clone_locations/{sample}.bed", sample=MANIFEST.sample_name)
@@ -100,9 +102,10 @@ rule make_tracks:
         "sort -V {input} > {output}; "
         "mkdir -p {TRACK_OUTPUT_DIR}; "
         "chmod 755 {TRACK_OUTPUT_DIR}; "
+        "chmod 644 {output[0]}"
         "rsync -arv --bwlimit=70000 sunk_pileup/*.bw {TRACK_OUTPUT_DIR}; "
         "rsync {output[0]} {TRACK_OUTPUT_DIR}; "
-        "chmod 644 {TRACK_OUTPUT_DIR}/*"
+        "chmod 644 {TRACK_OUTPUT_DIR}/*.bw"
 
 rule make_bw_pileup:
     input: "bam/{sample}.sorted.bam"
@@ -110,9 +113,9 @@ rule make_bw_pileup:
     params: sge_opts="-N plp_{sample} -l h_rt=0:20:00 -l mfree=2G"
     benchmark: "benchmarks/pileup/{sample}.txt"
     run:
-        shell("python /net/eichler/vol2/local/inhousebin/sunks/pileups/sam_to_bw_pileup.py "
-        "--inSam {SNAKEMAKE_DIR}/{input} --contigs {CONTIGS} "
-        "--outdir {SNAKEMAKE_DIR}/sunk_pileup "
+        shell("python /net/eichler/vol26/7200/software/legacy/inhousebin/sunks/pileups/sam_to_bw_pileup.py "
+        "--inSam {input} --contigs {CONTIGS} "
+        "--outdir sunk_pileup "
         "--sunk_mask {SUNK_MASK} --track_url https://{TRACK_URL}")
 
 rule make_bams:
@@ -143,7 +146,7 @@ rule map:
             output_prefix="mapping/{sample}/{sample}/mrsfast_out/{sample}"
     benchmark: "benchmarks/map/{sample}.txt"
     shell:
-        "zcat {input} | {MRSFAST_BINARY} --search {MRSFAST_INDEX} {MRSFAST_OPTS} --seq /dev/stdin -o {params.output_prefix} --disable-nohit"
+        "zcat {input} | mrsfast --search {MRSFAST_INDEX} {MRSFAST_OPTS} --seq /dev/stdin -o {params.output_prefix} --disable-nohit"
 
 rule merge_read_counts:
     input: expand("read_counts/merged/{sample}.txt", sample=MANIFEST.sample_name)
@@ -173,7 +176,7 @@ rule split_fastq:
             split_read_length=36
     benchmark: "benchmarks/split_fastq/{sample}.{num}.txt"
     shell:
-        "python split_reads.py --full_length_only {input} --read_counts {output[1]} --clone_name {wildcards.sample}.{wildcards.num} {params.split_read_length} | "
+        "python {SNAKEMAKE_DIR}/split_reads.py --full_length_only {input} --read_counts {output[1]} --clone_name {wildcards.sample}.{wildcards.num} {params.split_read_length} | "
         "bgzip -c | pv -L 50000K > {output[0]}"
 
 #rule demultiplex_fastq:
