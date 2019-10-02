@@ -102,7 +102,7 @@ rule make_tracks:
         "sort -V {input} > {output}; "
         "mkdir -p {TRACK_OUTPUT_DIR}; "
         "chmod 755 {TRACK_OUTPUT_DIR}; "
-        "chmod 644 {output[0]}"
+        "chmod 644 {output[0]}; "
         "rsync -arv --bwlimit=70000 sunk_pileup/*.bw {TRACK_OUTPUT_DIR}; "
         "rsync {output[0]} {TRACK_OUTPUT_DIR}; "
         "chmod 644 {TRACK_OUTPUT_DIR}/*.bw"
