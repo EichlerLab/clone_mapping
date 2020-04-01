@@ -42,6 +42,8 @@ if __name__ == "__main__":
     if args.cores is not None:
         cores = pd.read_csv(args.cores, header=None, names=["name", "core_hits"], sep='\t', index_col=0)
         merged = merged.merge(cores, how="left", left_index=True, right_index=True)
-    merged.to_csv(args.output, sep="\t", index=False)
+    
+    merged['length'] = merged['end'] - merged['start']
+    merged[['clone','chr','start','end','length','reads','sunk_bases','sunk_depth','sunk_hits','core_hits']].to_csv(args.output, sep="\t", index=False)
 
 
