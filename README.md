@@ -4,13 +4,38 @@ Pipeline for generating SUNK pileups from Nextera-based clone sequence data.
 
 ## Quick start
 
+### Manifest generation
+There is a helper script is included in this repository to help with proper formation of the manifest.
+Usage information can be found with 
+
+```bash
+./sunk_manifest.sh -h.  
+```
+
 Add your samples to the manifest (```manifest.tab```) and check that the settings in ```config.yaml``` make sense for your analysis, then run:
 ```bash
+export DRMAA_LIBRARY_PATH=/opt/uge/lib/lx-amd64/libdrmaa.so.1.0
 snakesub -j 20 -w 60 -kT
 ```
 where snakesub is aliased to:
 ```bash
 snakemake --drmaa " -V -cwd -w n -e ./log -o ./log {params.sge_opts} -S /bin/bash"
+```
+
+Additionally, if you want to make these changes to your environment, you can edit your ~/.bash_profile to include the following lines
+```bash
+alias snakesub='snakemake --drmaa " -V -cwd -w n -e ./log -o ./log {params.sge_opts} -S /bin/bash"'
+export DRMAA_LIBRARY_PATH=/opt/uge/lib/lx-amd64/libdrmaa.so.1.0
+```
+
+To implement changes, type
+```bash
+source ~/.bash_profile
+```
+
+After that, you can just run the following command each time. 
+```bash
+snakesub -j 20 -w 60 -kT
 ```
 
 ## Full stats
