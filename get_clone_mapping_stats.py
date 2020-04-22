@@ -44,6 +44,6 @@ if __name__ == "__main__":
         merged = merged.merge(cores, how="left", left_index=True, right_index=True)
     
     merged['length'] = merged['end'] - merged['start']
-    merged[['clone','chr','start','end','length','reads','sunk_bases','sunk_depth','sunk_hits','core_hits']].to_csv(args.output, sep="\t", index=False)
+    merged[['chr','start','end','length','reads','sunk_bases','sunk_depth','sunk_hits','core_hits']].to_csv(args.output, sep="\t", index=True, index_label='clone')
 
 
