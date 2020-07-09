@@ -47,7 +47,7 @@ fi
 
 tmp_directory=${RANDOM}.dir
 
-/bin/ls ${directory}/*fastq | sort > ${tmp_directory}
+/bin/ls ${directory}/*fastq{,.gz} | sort > ${tmp_directory}
 
 clone_names=$( cat ${tmp_directory} | awk -F "/" '{print $NF}' | awk -F '_' '{print $1}' | sort -u )
 

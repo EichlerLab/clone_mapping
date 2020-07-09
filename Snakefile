@@ -177,7 +177,7 @@ rule split_fastq:
     benchmark: "benchmarks/split_fastq/{sample}.{num}.txt"
     shell:
         "python {SNAKEMAKE_DIR}/split_reads.py --full_length_only {input} --read_counts {output[1]} --clone_name {wildcards.sample}.{wildcards.num} {params.split_read_length} | "
-        "bgzip -c | pv -L 50000K > {output[0]}"
+        "bgzip -c > {output[0]}"
 
 #rule demultiplex_fastq:
 #    input: ["fastq/%s%d.fq.gz" % (BARCODE_PREFIX, num) for num in [1,2,3]]
