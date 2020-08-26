@@ -14,7 +14,7 @@ script_dir: /net/eichler/vol26/7200/software/pipelines/rd_pipelines/wssd_sunk/
   # track_output_dir: /net/eichler/vol26/7200/bac_assembly/backups/tracks/hg38/sunk_pileups/Nextera_XX
   # track_url: genometest2.gs.washington.edu/bac_assembly/tracks/Nextera_XX
 track_output_dir: /net/eichler/vol26/7200/bac_assembly/backups/tracks/hg38/sunk_pileups
-track_url: genometest2.gs.washington.edu/bac_assembly/tracks
+track_url: genometest2.gs.washington.edu/bac_assembly/tracks/hg38/sunk_pileups
 
 hg38:
     sunk_mask: /net/eichler/vol26/eee_shared/assemblies/hg38/legacy/read_depth/illumina/hg38_sunk_mask_track_pad36_e0.dts
